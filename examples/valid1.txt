@@ -1,0 +1,53 @@
+
+/*
+    Valid program example
+*/
+
+struct vector2d{
+    int x;
+    int y;
+
+};
+
+
+void main(){
+
+    struct vector2d v0;
+    v0 = createVector2d(10, 1);
+    print(v0.x);
+
+    print('\n');
+    print(nestedCodeCheck(4.0));
+
+    return;
+}
+
+
+struct vector2d createVector2d(int x0, int y0){
+
+    struct vector2d v;
+
+    v.x = x0;
+    v.y = y0;
+
+
+    return v;
+
+}
+
+bool nestedCodeCheck(float x){
+
+    if(x < 10){
+        while(true){
+            /*print(210);*/
+            if(x < 1) break;
+            else{
+                return false;
+            }
+            return true;
+        }
+    }else{
+        return true;
+    }
+    return false;
+}

@@ -1,0 +1,9 @@
+/target/
+.classpath
+.project
+.settings/
+dependency-reduced-pom.xml
+src/main/java/Lexer.java
+src/main/java/parser.java
+src/main/java/sym.java
+.mvn/wrapper/maven-wrapper.jar

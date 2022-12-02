@@ -1,0 +1,768 @@
+/**
+ *  This code is part of the lab exercises for the Compilers course
+ *  at Harokopio University of Athens, Dept. of Informatics and Telematics.
+ */
+
+import java_cup.runtime.Symbol;
+import java.util.List;
+import java.util.ArrayList;
+import org.objectweb.asm.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ast.*;
+
+parser code
+{:
+    private static final Logger LOGGER = LoggerFactory.getLogger(parser.class);
+
+    /** Report a non fatal error (or warning).
+     *
+     * @param message an error message.
+     * @param info    an extra object reserved for use by specialized subclasses.
+     */
+    public void report_error(String message, Object info)
+    {
+        String error = "";
+        if (!(info instanceof Symbol))
+            info = cur_token;
+        if(info instanceof Symbol) {
+            int line = ((Symbol)info).left;
+            int column = ((Symbol)info).right;
+            error = line  + ":" + column;
+        }
+        error += ": " + message;
+        LOGGER.error(error);
+    }
+
+    /** Report a fatal error.
+     *
+     * @param message an error message.
+     * @param info    an extra object reserved for use by specialized subclasses.
+     */
+    public void report_fatal_error(String   message, Object   info) throws java.lang.Exception
+    {
+        /* stop parsing (not really necessary since we throw an exception, but) */
+        done_parsing();
+
+        /* use the normal error message reporting to put out the message */
+        report_error(message, info);
+
+        /* throw an exception */
+        throw new Exception("Can't recover from previous error(s)");
+    }
+
+    public int getLine() {
+        Symbol symbol = (Symbol) cur_token;
+        return symbol.left;
+    }
+
+    public int getColumn() {
+        Symbol symbol = (Symbol) cur_token;
+        return symbol.right;
+    }
+:};
+
+terminal java.lang.String IDENTIFIER;       // name
+terminal DOT, COMMA;
+terminal PRINT;
+terminal BOOL, FLOAT, INT, CHAR;
+terminal IF, ELSE;
+terminal VOID;
+terminal RETURN, BREAK, CONTINTUE;
+terminal WHILE;
+terminal STRUCT;
+terminal LPAREN, RPAREN, SEMICOLON;
+terminal LCURLY, RCURLY;
+terminal LBRACKET, RBRACKET;
+
+terminal EQ;
+terminal EQEQ, AND, OR, NOT;
+terminal GT, LT, GE, LE, NEQ;
+terminal TIMES, DIVISION, MODULO;
+terminal PLUS, MINUS, UMINUS;
+
+terminal java.lang.Integer INTEGER_LITERAL;
+terminal java.lang.Float  FLOAT_LITERAL;
+terminal java.lang.String STRING_LITERAL;
+terminal java.lang.Boolean BOOLEAN_LITERAL;
+terminal java.lang.String CHAR_LITERAL;
+
+
+nonterminal RootUnit RootUnit;
+nonterminal CompUnit CompUnit;
+nonterminal List<CompUnit> CompUnitList;
+nonterminal Statement Stmt;
+nonterminal List<Statement> StmtList;
+nonterminal CompoundStatement CompoundStmt;
+nonterminal Expression Expr;
+nonterminal List<Expression> ExprList;
+
+
+nonterminal ParameterDeclarationStatement ParamDecStmt;
+nonterminal List<ParameterDeclarationStatement> ParamDecStmtList;
+nonterminal FunctionDefinitionStatement FunDefStmt;
+nonterminal List<FunctionDefinitionStatement> FunDefStmtList;
+
+nonterminal org.objectweb.asm.Type Type;
+nonterminal org.objectweb.asm.Type VariableType;
+nonterminal org.objectweb.asm.Type StructType;
+
+nonterminal VariableDefinitionStatement VarDefStmt;
+nonterminal List<VariableDefinitionStatement> VarDefStmtList;
+nonterminal VariableDefinition VariableDef;
+nonterminal VariableArrayDefinition VariableArrayDef;
+nonterminal StructDeclarationStatement StructDec;
+nonterminal StructArrayDeclaration StructArrayDec;
+nonterminal StructDefinitionStatement StructDef;
+
+precedence left EQEQ, NEQ, COMMA, OR, AND;
+precedence left LT, GT, LE, GE;
+precedence left PLUS, MINUS;
+precedence left TIMES, DIVISION, MODULO;
+precedence right NOT;
+precedence left DOT;
+precedence right UMINUS;
+
+start with RootUnit;
+
+RootUnit ::= /*empty*/
+            {:
+                RESULT = new RootUnit();
+                RESULT.setLine(1);
+                RESULT.setColumn(1);
+            :}
+        | CompUnitList:cl
+            {:
+                RESULT = new RootUnit(cl);
+                RESULT.setLine(clleft);
+                RESULT.setColumn(clright);
+            :}
+        ;
+
+CompUnitList ::= CompUnit:c
+                {:
+                    RESULT = new ArrayList<CompUnit>();
+                    RESULT.add(c);
+                :}
+            | CompUnitList:cl CompUnit:c
+                {:
+                    cl.add(c);
+                    RESULT = cl;
+                :}
+            ;
+
+CompUnit ::=
+        VariableDef:v
+            {:
+                RESULT = new CompUnit();
+                RESULT.getStatements().add(v);
+            :}
+
+        | VariableArrayDef:va
+            {:
+                RESULT = new CompUnit();
+                RESULT.getStatements().add(va);
+            :}
+
+        | StructDec:s
+              {:
+                  RESULT = new CompUnit();
+                  RESULT.getStatements().add(s);
+              :}
+
+        | StructArrayDec:sa
+            {:
+                RESULT = new CompUnit();
+                RESULT.getStatements().add(sa);
+            :}
+
+        | StructDef:s
+            {:
+                RESULT = new CompUnit();
+                RESULT.getStatements().add(s);
+            :}
+
+
+        | FunDefStmt:f
+            {:
+                RESULT = new CompUnit();
+                RESULT.getStatements().add(f);
+                RESULT.setLine(fleft);
+                RESULT.setColumn(fright);
+            :}
+        ;
+
+
+
+Stmt ::= /*PRINT:p LPAREN Expr:e RPAREN SEMICOLON
+            {:
+                RESULT = new PrintStatement(e);
+                RESULT.setLine(pleft);
+                RESULT.setColumn(pright);
+            :}
+
+        |*/ WHILE:w LPAREN Expr:e RPAREN Stmt:s
+            {:
+                RESULT = new WhileStatement(e, s);
+                RESULT.setLine(wleft);
+                RESULT.setColumn(wright);
+            :}
+
+        | IF:i LPAREN Expr:e RPAREN Stmt:s
+            {:
+                RESULT = new IfStatement(e,s);
+                RESULT.setLine(ileft);
+                RESULT.setColumn(iright);
+            :}
+        | IF:i LPAREN Expr:e RPAREN Stmt:s1 ELSE Stmt:s2
+            {:
+                RESULT = new IfElseStatement(e,s1,s2);
+                RESULT.setLine(ileft);
+                RESULT.setColumn(iright);
+            :}
+
+        | Expr:e1 EQ Expr:e2 SEMICOLON
+            {:
+                RESULT = new AssignmentStatement(e1,e2);
+                RESULT.setLine(e1left);
+                RESULT.setColumn(e1right);
+            :}
+
+        | Expr:e1 SEMICOLON
+            {:
+                RESULT = new ExpressionSemicolonStatement(e1);
+                RESULT.setLine(e1left);
+                RESULT.setColumn(e1right);
+            :}
+
+        | RETURN:r SEMICOLON
+            {:
+                RESULT = new ReturnStatement();
+                RESULT.setLine(rleft);
+                RESULT.setColumn(rright);
+            :}
+        | RETURN:r Expr:e SEMICOLON
+            {:
+                RESULT = new ReturnStatement(e);
+                RESULT.setLine(rleft);
+                RESULT.setColumn(rright);
+            :}
+
+        | CompoundStmt:cs
+            {:
+                RESULT = new CompoundStatement(cs.getStatements());
+                RESULT.setLine(csleft);
+                RESULT.setLine(csright);
+            :}
+
+        | BREAK:b SEMICOLON
+            {:
+                RESULT = new BreakStatement();
+                RESULT.setLine(bleft);
+                RESULT.setColumn(bright);
+            :}
+
+        | CONTINTUE:c SEMICOLON
+            {:
+                RESULT = new ContinueStatement();
+                RESULT.setLine(cleft);
+                RESULT.setColumn(cright);
+            :}
+        | VariableDef:v
+            {:
+                RESULT = new VariableDefinition(v.getType(), v.getIdentifier());
+                RESULT.setLine(vleft);
+                RESULT.setColumn(vright);
+            :}
+
+        | VariableArrayDef:va
+            {:
+                RESULT = new VariableArrayDefinition(va.getType(), va.getIdentifier(), va.getLiteral());
+                RESULT.setLine(valeft);
+                RESULT.setColumn(varight);
+            :}
+
+        | StructDec:s
+            {:
+                RESULT = new StructDeclarationStatement(s.getType(), s.getStructIdentifier(), s.getIdentifier());
+                RESULT.setLine(sleft);
+                RESULT.setColumn(sright);
+            :}
+
+        | StructArrayDec:sa
+            {:
+                RESULT = new StructArrayDeclaration(sa.getType(), sa.getStructIdentifier(), sa.getIdentifier(), sa.getLiteral());
+                RESULT.setLine(saleft);
+                RESULT.setColumn(saright);
+            :}
+
+        ;
+
+StmtList ::= Stmt:s
+            {:
+                RESULT = new ArrayList<Statement>();
+                RESULT.add(s);
+            :}
+        | StmtList:sl Stmt:s
+            {:
+                sl.add(s);
+                RESULT = sl;
+            :}
+        ;
+
+CompoundStmt ::= LCURLY:lc RCURLY:rc
+                {:
+                    RESULT = new CompoundStatement();
+                    RESULT.setLine(lcleft);
+                    RESULT.setColumn(lcright);
+
+                :}
+            | LCURLY:lc StmtList:sl RCURLY
+                {:
+                    RESULT = new CompoundStatement(sl);
+                    RESULT.setLine(lcleft);
+                    RESULT.setColumn(lcright);
+                :}
+            ;
+
+//TODO REMNOVED VOID
+Type ::= CHAR
+                {:
+                    RESULT = org.objectweb.asm.Type.CHAR_TYPE;
+                :}
+
+            | BOOL
+                {:
+                    RESULT = org.objectweb.asm.Type.BOOLEAN_TYPE;
+                :}
+
+            | FLOAT
+                {:
+                    RESULT = org.objectweb.asm.Type.FLOAT_TYPE;
+                :}
+
+            | INT
+                {:
+                    RESULT = org.objectweb.asm.Type.INT_TYPE;
+                :}
+
+           /* | VOID
+                {:
+                    RESULT = org.objectweb.asm.Type.VOID_TYPE;
+                :}*/
+            ;
+
+
+StructType ::= STRUCT
+                {:
+                    RESULT = org.objectweb.asm.Type.getType(Object.class);
+                :}
+            ;
+
+//TODO CHANGED FROM TYPE TO VARIABLETYPE ADDED VOID SEPERATELY
+VariableDef ::= Type:t IDENTIFIER:id SEMICOLON
+                {:
+                    RESULT = new VariableDefinition(t, id);
+                    RESULT.setLine(tleft);
+                    RESULT.setColumn(tright);
+                :}
+            ;
+
+VariableArrayDef ::= Type:t IDENTIFIER:i LBRACKET INTEGER_LITERAL:il RBRACKET SEMICOLON
+                    {:
+                        RESULT = new VariableArrayDefinition(t, i, il);
+                        /*RESULT.setType(Type.getType("["+t.toString()));*/
+                        RESULT.setType(Type.getType("[" + t.toString()));
+                        RESULT.setLine(tleft);
+                        RESULT.setColumn(tright);
+                    :}
+                ;
+
+VarDefStmtList ::= VariableDef:v
+                {:
+                    RESULT = new ArrayList<VariableDefinitionStatement>();
+                    RESULT.add(v);
+                :}
+
+
+
+            | VariableArrayDef:va
+                {:
+                    RESULT = new ArrayList<VariableDefinitionStatement>();
+                    RESULT.add(va);
+                :}
+
+            | StructDec:s
+                {:
+                    RESULT = new ArrayList<VariableDefinitionStatement>();
+                    RESULT.add(s);
+                :}
+
+            | StructArrayDec:sa
+                {:
+                    RESULT = new ArrayList<VariableDefinitionStatement>();
+                    RESULT.add(sa);
+                :}
+
+            | VarDefStmtList:vdl VariableDef:v
+                {:
+                    vdl.add(v);
+                    RESULT = vdl;
+                :}
+
+            | VarDefStmtList:vdl VariableArrayDef:va
+                {:
+                    vdl.add(va);
+                    RESULT = vdl;
+                :}
+            | VarDefStmtList:vdl StructDec:s
+                {:
+                    vdl.add(s);
+                    RESULT = vdl;
+                :}
+
+            | VarDefStmtList:vdl StructArrayDec:sa
+                {:
+                    vdl.add(sa);
+                    RESULT = vdl;
+                :}
+            ;
+
+StructDec ::= StructType:s IDENTIFIER:si IDENTIFIER:i SEMICOLON
+              {:
+                  org.objectweb.asm.Type type = org.objectweb.asm.Type.getObjectType(si);
+                  RESULT = new StructDeclarationStatement(type, si,i);
+                  RESULT.setLine(sleft);
+                  RESULT.setColumn(sright);
+              :}
+            ;
+
+StructArrayDec ::= StructType:s IDENTIFIER:si IDENTIFIER:i LBRACKET INTEGER_LITERAL:il RBRACKET SEMICOLON
+                {:
+                    org.objectweb.asm.Type type = org.objectweb.asm.Type.getObjectType(si);
+                    RESULT = new StructArrayDeclaration(org.objectweb.asm.Type.getType("["+type.toString()), si, i, il);
+                    RESULT.setLine(sleft);
+                    RESULT.setLine(sright);
+                :}
+
+            ;
+
+StructDef ::= StructType:s IDENTIFIER:i LCURLY VarDefStmtList:vdl RCURLY SEMICOLON
+        {:
+            org.objectweb.asm.Type type = org.objectweb.asm.Type.getObjectType(i);
+            RESULT = new StructDefinitionStatement(type, i,vdl);
+            //RESULT = new StructDefinitionStatement(s, i, vdl);
+            RESULT.setLine(sleft);
+            RESULT.setColumn(sright);
+        :}
+    ;
+
+
+ParamDecStmt ::= Type:t IDENTIFIER:i
+                {:
+                    RESULT = new ParameterDeclarationStatement(t, i);
+                    RESULT.setLine(tleft);
+                    RESULT.setColumn(tright);
+                :}
+
+            | Type:t LBRACKET RBRACKET IDENTIFIER:i
+                {:
+                    RESULT = new ParameterDeclarationStatement(org.objectweb.asm.Type.getType("["+t.toString()), i, true);
+                    RESULT.setLine(tleft);
+                    RESULT.setColumn(tright);
+                :}
+
+            | StructType:s IDENTIFIER:si IDENTIFIER:i
+                {:
+                    org.objectweb.asm.Type type = org.objectweb.asm.Type.getObjectType(si);
+                    RESULT = new ParameterDeclarationStatement(type, si, i); //s
+                    RESULT.setLine(sleft);
+                    RESULT.setColumn(sright);
+                :}
+
+            | StructType:s IDENTIFIER:si LBRACKET RBRACKET IDENTIFIER:i
+                {:
+                    org.objectweb.asm.Type type = org.objectweb.asm.Type.getObjectType(si);
+                    RESULT = new ParameterDeclarationStatement(org.objectweb.asm.Type.getType("["+type), si, i, true);//s.toString()
+                    RESULT.setLine(sleft);
+                    RESULT.setColumn(sright);
+                :}
+            ;
+
+ParamDecStmtList ::= ParamDecStmt:s
+                    {:
+                        RESULT = new ArrayList<ParameterDeclarationStatement>();
+                        RESULT.add(s);
+                    :}
+                | ParamDecStmtList:sl COMMA ParamDecStmt:s
+                    {:
+                        sl.add(s);
+                        RESULT = sl;
+                    :}
+
+                |
+                    /*empty*/
+
+                    {:
+                        RESULT = new ArrayList<ParameterDeclarationStatement>();
+                    :}
+                ;
+//TODO ADDED VOID SEPERATELY
+FunDefStmt ::= Type:t IDENTIFIER:i LPAREN ParamDecStmtList:pl RPAREN LCURLY StmtList:sl RCURLY
+                {:
+                    ArrayList<org.objectweb.asm.Type> paramTypes = new ArrayList<>();
+                    for(ParameterDeclarationStatement ps : pl)
+                        paramTypes.add(ps.getType());
+                    RESULT = new FunctionDefinitionStatement(org.objectweb.asm.Type.getMethodType(t, paramTypes.toArray(new org.objectweb.asm.Type[0])), i, pl, sl);
+                    RESULT.setLine(tleft);
+                    RESULT.setColumn(tright);
+                :}
+
+            | VOID:v IDENTIFIER:i LPAREN ParamDecStmtList:pl RPAREN LCURLY StmtList:sl RCURLY
+            {:
+                ArrayList<org.objectweb.asm.Type> paramTypes = new ArrayList<>();
+                for(ParameterDeclarationStatement ps : pl)
+                    paramTypes.add(ps.getType());
+                RESULT = new FunctionDefinitionStatement(org.objectweb.asm.Type.getMethodType(org.objectweb.asm.Type.VOID_TYPE, paramTypes.toArray(new org.objectweb.asm.Type[0])), i, pl, sl);
+                RESULT.setLine(vleft);
+                RESULT.setColumn(vright);
+            :}
+
+            | StructType:s IDENTIFIER:si IDENTIFIER:i LPAREN ParamDecStmtList:pl RPAREN LCURLY StmtList:sl RCURLY
+                {:
+                    ArrayList<org.objectweb.asm.Type> paramTypes = new ArrayList<>();
+                    for(ParameterDeclarationStatement ps : pl)
+                        paramTypes.add(ps.getType());
+
+                    //org.objectweb.asm.Type returnType = org.objectweb.asm.Type.getType("Ljava/lang/Object;");
+
+                    //RESULT = new FunctionDefinitionStatement(org.objectweb.asm.Type.getMethodType(s, paramTypes.toArray(new org.objectweb.asm.Type[0])), si, i, pl ,sl);
+                    org.objectweb.asm.Type returnType = org.objectweb.asm.Type.getObjectType(si);
+                    RESULT = new FunctionDefinitionStatement(org.objectweb.asm.Type.getMethodType(returnType, paramTypes.toArray(new org.objectweb.asm.Type[0])), si, i, pl ,sl);
+                    RESULT.setLine(sleft);
+                    RESULT.setColumn(sright);
+                :}
+            ;
+
+FunDefStmtList ::= FunDefStmt:f
+                {:
+                    RESULT = new ArrayList<FunctionDefinitionStatement>();
+                    RESULT.add(f);
+                :}
+            | FunDefStmtList:fl FunDefStmt:f
+                {:
+                    fl.add(f);
+                    RESULT = fl;
+                :}
+            ;
+
+Expr ::= INTEGER_LITERAL:l
+        {:
+            RESULT = new IntegerLiteralExpression(l);
+            RESULT.setLine(lleft);
+            RESULT.setColumn(lright);
+        :}
+
+    | FLOAT_LITERAL:l
+        {:
+            RESULT = new FloatLiteralExpression(l);
+            RESULT.setLine(lleft);
+            RESULT.setColumn(lright);
+        :}
+    | STRING_LITERAL:l
+        {:
+            RESULT = new StringLiteralExpression(l);
+            RESULT.setLine(lleft);
+            RESULT.setColumn(lright);
+        :}
+    | CHAR_LITERAL:l
+        {:
+            Character cl = l.charAt(0);
+            RESULT = new CharacterLiteralExpression(cl);
+            RESULT.setLine(lleft);
+            RESULT.setColumn(lright);
+        :}
+    | BOOLEAN_LITERAL:l
+        {:
+            RESULT = new BooleanLiteralExpression(l);
+            RESULT.setLine(lleft);
+            RESULT.setColumn(lright);
+        :}
+
+    | IDENTIFIER:i
+        {:
+            RESULT = new IdentifierExpression(i);
+            RESULT.setLine(ileft);
+            RESULT.setColumn(iright);
+        :}
+
+    | IDENTIFIER:i LPAREN ExprList:el RPAREN
+        {:
+            RESULT = new IdentifierParenthesisExpression(i, el);
+            RESULT.setLine(ileft);
+            RESULT.setColumn(iright);
+        :}
+
+    | IDENTIFIER:i LPAREN RPAREN
+        {:
+            RESULT = new IdentifierParenthesisExpression(i);
+            RESULT.setLine(ileft);
+            RESULT.setColumn(iright);
+        :}
+
+    | IDENTIFIER:i LBRACKET Expr:e RBRACKET
+        {:
+            RESULT = new IdentifierBracketExpression(i,e);
+            RESULT.setLine(ileft);
+            RESULT.setColumn(iright);
+        :}
+
+    | Expr:e DOT IDENTIFIER:i
+        {:
+            RESULT = new ExprDotIdentifierExpression(e, i);
+            RESULT.setLine(eleft);
+            RESULT.setColumn(eright);
+        :}
+
+    | Expr:e DOT IDENTIFIER:i LBRACKET Expr:e1 RBRACKET
+        {:
+            IdentifierBracketExpression arrayExpr = new IdentifierBracketExpression(i,e1);
+            RESULT = new ExpressionDotArrayElementExpression(e, arrayExpr);
+            RESULT.setLine(eleft);
+            RESULT.setColumn(eright);
+        :}
+
+    | LPAREN:lp Expr:e RPAREN
+        {:
+            RESULT = new ParenthesisExpression(e);
+            RESULT.setLine(lpleft);
+            RESULT.setColumn(lpright);
+        :}
+
+    | Expr:e1 PLUS Expr:e2
+        {:
+           RESULT = new BinaryExpression(Operator.PLUS, e1, e2);
+           RESULT.setLine(e1left);
+           RESULT.setColumn(e1right);
+        :}
+    | Expr:e1 MINUS Expr:e2
+        {:
+            RESULT = new BinaryExpression(Operator.MINUS, e1, e2);
+            RESULT.setLine(e1left);
+            RESULT.setColumn(e1right);
+        :}
+
+    | Expr:e1 TIMES Expr:e2
+        {:
+           RESULT = new BinaryExpression(Operator.MULTIPLY, e1, e2);
+           RESULT.setLine(e1left);
+           RESULT.setColumn(e1right);
+        :}
+
+    | Expr:e1 DIVISION Expr:e2
+        {:
+           RESULT = new BinaryExpression(Operator.DIVISION, e1, e2);
+           RESULT.setLine(e1left);
+           RESULT.setColumn(e1right);
+        :}
+
+    | Expr:e1 MODULO Expr:e2
+        {:
+            RESULT = new BinaryExpression(Operator.MODULO, e1, e2);
+            RESULT.setLine(e1left);
+            RESULT.setColumn(e1right);
+        :}
+
+    | Expr:e1 EQEQ Expr:e2
+       {:
+           RESULT = new BinaryExpression(Operator.EQUAL, e1, e2);
+           RESULT.setLine(e1left);
+           RESULT.setColumn(e1right);
+       :}
+
+    | Expr:e1 NEQ Expr:e2
+        {:
+            RESULT = new BinaryExpression(Operator.NEQUAL, e1, e2);
+            RESULT.setLine(e1left);
+            RESULT.setColumn(e1right);
+        :}
+
+    | Expr:e1 GT Expr:e2
+        {:
+            RESULT = new BinaryExpression(Operator.GT, e1, e2);
+            RESULT.setLine(e1left);
+            RESULT.setColumn(e1right);
+        :}
+
+    | Expr:e1 GE Expr:e2
+        {:
+            RESULT = new BinaryExpression(Operator.GE, e1, e2);
+            RESULT.setLine(e1left);
+            RESULT.setColumn(e1right);
+        :}
+
+    | Expr:e1 LT Expr:e2
+        {:
+            RESULT = new BinaryExpression(Operator.LT, e1, e2);
+            RESULT.setLine(e1left);
+            RESULT.setColumn(e1right);
+        :}
+
+    | Expr:e1 LE Expr:e2
+        {:
+            RESULT = new BinaryExpression(Operator.LE, e1, e2);
+            RESULT.setLine(e1left);
+            RESULT.setColumn(e1right);
+        :}
+
+    | MINUS:m Expr:e
+        {:
+            RESULT = new UnaryExpression(Operator.MINUS, e);
+            RESULT.setLine(mleft);
+            RESULT.setColumn(mright);
+        :}
+        %prec UMINUS
+
+    | NOT:n Expr:e
+        {:
+            RESULT = new UnaryExpression(Operator.NOT, e);
+            RESULT.setLine(nleft);
+            RESULT.setColumn(nright);
+        :}
+
+    | DOT:d Expr:e
+        {:
+            RESULT = new UnaryExpression(Operator.DOT, e);
+            RESULT.setLine(dleft);
+            RESULT.setColumn(dright);
+        :}
+
+    | Expr:e1 AND Expr:e2
+        {:
+            RESULT = new BinaryExpression(Operator.AND, e1, e2);
+            RESULT.setLine(e1left);
+            RESULT.setColumn(e1right);
+        :}
+
+    | Expr:e1 OR Expr:e2
+        {:
+            RESULT = new BinaryExpression(Operator.OR, e1, e2);
+            RESULT.setLine(e1left);
+            RESULT.setColumn(e1right);
+        :}
+
+    ;
+
+ExprList ::= Expr:e
+            {:
+                RESULT = new ArrayList<Expression>();
+                RESULT.add(e);
+            :}
+        | ExprList:el COMMA Expr:e
+            {:
+                el.add(e);
+                RESULT = el;
+            :}
+        ;
+

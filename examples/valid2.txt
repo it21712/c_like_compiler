@@ -1,0 +1,60 @@
+
+
+/*
+    Valid program example
+*/
+
+struct vector2d{
+    int x;
+    int y;
+};
+
+void main(){
+
+    struct vector2d vector0;
+    struct vector2d vector1;
+
+    struct vector2d vector3;
+
+    vector0.x = 1;
+    vector0.y = 3;
+
+    vector1.x = 2;
+    vector1.y = 7;
+
+    vector3 = addVectors2d(vector0, vector1);
+    print(vector3.x);
+    print("\t");
+    print(vector3.y);
+    print('\n');
+    struct vector2d maxVector;
+
+    maxVector = maxVector2d(vector0, vector1);
+    print("MAX VECTOR: ");
+    print("(");
+    print(maxVector.x);
+    print(",");
+    print(maxVector.y);
+    print(")\n");
+    return;
+}
+
+struct vector2d addVectors2d(struct vector2d v0, struct vector2d v1){
+
+    struct vector2d result;
+
+
+    result.x = v0.x + v1.x;
+    result.y = v0.y + v1.y;
+
+    return result;
+
+}
+
+struct vector2d maxVector2d(struct vector2d v0, struct vector2d v1){
+
+    if(v0.x < v1.x && v0.y < v1.y)
+        return v1;
+
+    return v0;
+}

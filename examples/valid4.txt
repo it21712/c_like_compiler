@@ -1,0 +1,64 @@
+
+struct Data{
+    int id;
+    char info[100];
+};
+
+struct Region{
+    int areaCode;
+    bool bin[100];
+    struct Data data[1000];
+};
+
+struct Person{
+    int age;
+    int cars[10];
+    struct Region region;
+};
+
+
+
+void main(){
+
+    float initArray[100];
+    int c;
+    c = 0;
+    while(c < 100){
+        initArray[c] = 2.0;
+        c = c + 1;
+    }
+
+    float copyArray[100];
+
+    copyArray = initArray;
+
+    c = 0;
+    while(c < 100){
+        print(copyArray[c]);
+        print('\n');
+        c = c + 1;
+    }
+
+    int a;
+
+
+    a = add(10, 10, 50, 2);
+    print("a is ");
+    print(a);
+
+    return;
+
+}
+
+int add(int a, int b, int c, int d){
+    int e;
+    e = a + b;
+    int f;
+    f = c + d;
+
+    return e+f;
+}
+
+int Fmul(int a, int b){
+    return a*b;
+}

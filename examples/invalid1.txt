@@ -1,0 +1,60 @@
+
+/*
+    Invalid program example (will not compile)
+*/
+
+struct vector2d{
+    int x;
+    int y;
+};
+
+
+void main(){
+
+    int a;
+
+    bool b;
+    b = nestedCodeCheck(); /* expected 1 but got 0 arguments */
+    b = nestedCodeCheck(0.2); /* cannot assign float to int */
+    b = nestedCodeCheck(true);
+    float floats[10];
+
+    print("Hello world");
+
+    struct vector2d v0;
+    v0 = createVector2d(10, 1);
+
+    return .45;    /* invalid return type */
+}
+
+
+struct vector2d createVector2d(int x, int y){
+
+    struct vector2d v;
+
+    v.x = 10;
+    v.y = 12;
+
+    return v;
+
+}
+
+bool nestedCodeCheck(int x){
+
+    if(x < 10){
+        while(true){
+            print(210);
+            if(x < 1) continue;
+            else{
+                return false;
+                if(x < 0) return false; /* unreachable statement */
+            }
+            return true;
+        }
+    }else{
+        break; /* break outside of loop */
+
+        return true;
+    }
+     /* missing return statement (not all code paths return a value) */
+}

@@ -1,0 +1,48 @@
+
+
+struct data{
+    int packetNum;
+    char info[100];
+    bool isAlive;
+};
+
+
+
+void main(){
+
+    struct data data1;
+    char info[100];
+    int c;
+    c = 0;
+    while(c < 100){
+        info[c] = 'f';
+        c = c + 1;
+    }
+
+    data1 = createDataPack(0, info, true);
+    doNothing();
+    print(data1.info[10]);
+    print('\n');
+    print(data1.isAlive);
+    struct data datapool[100];
+    c = 0;
+    while(c < 100){
+        /*datapool[c] = createDataPack(c, info, true);*/
+        c = c+1;
+    }
+
+    return;
+}
+
+struct data createDataPack(int packetNum, char[] info, bool isAlive){
+    struct data d;
+
+    d.packetNum = packetNum;
+    d.info = info;
+    d.isAlive = isAlive;
+    return d;
+}
+
+void doNothing(){
+    return;
+}
