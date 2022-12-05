@@ -434,7 +434,8 @@ VarDefStmtList ::= VariableDef:v
                 :}
             ;
 
-StructDec ::= StructType:s IDENTIFIER:si IDENTIFIER:i SEMICOLON
+/*Following needs struct in front of type*/
+/*StructDec ::= StructType:s IDENTIFIER:si IDENTIFIER:i SEMICOLON
               {:
                   org.objectweb.asm.Type type = org.objectweb.asm.Type.getObjectType(si);
                   RESULT = new StructDeclarationStatement(type, si,i);
@@ -442,13 +443,34 @@ StructDec ::= StructType:s IDENTIFIER:si IDENTIFIER:i SEMICOLON
                   RESULT.setColumn(sright);
               :}
             ;
+*/
 
-StructArrayDec ::= StructType:s IDENTIFIER:si IDENTIFIER:i LBRACKET INTEGER_LITERAL:il RBRACKET SEMICOLON
+StructDec ::= IDENTIFIER:si IDENTIFIER:i SEMICOLON
+              {:
+                  org.objectweb.asm.Type type = org.objectweb.asm.Type.getObjectType(si);
+                  RESULT = new StructDeclarationStatement(type, si,i);
+                  RESULT.setLine(sileft);
+                  RESULT.setColumn(siright);
+              :}
+            ;
+
+/*StructArrayDec ::= StructType:s IDENTIFIER:si IDENTIFIER:i LBRACKET INTEGER_LITERAL:il RBRACKET SEMICOLON
                 {:
                     org.objectweb.asm.Type type = org.objectweb.asm.Type.getObjectType(si);
                     RESULT = new StructArrayDeclaration(org.objectweb.asm.Type.getType("["+type.toString()), si, i, il);
                     RESULT.setLine(sleft);
                     RESULT.setLine(sright);
+                :}
+
+            ;
+*/
+
+StructArrayDec ::= IDENTIFIER:si IDENTIFIER:i LBRACKET INTEGER_LITERAL:il RBRACKET SEMICOLON
+                {:
+                    org.objectweb.asm.Type type = org.objectweb.asm.Type.getObjectType(si);
+                    RESULT = new StructArrayDeclaration(org.objectweb.asm.Type.getType("["+type.toString()), si, i, il);
+                    RESULT.setLine(sileft);
+                    RESULT.setLine(siright);
                 :}
 
             ;

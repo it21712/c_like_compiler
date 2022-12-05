@@ -6,14 +6,15 @@ struct Person{
 
 
 void main(){
-    struct Person p;
-    p.age = 31;
-    string n;
-    n = "Alex";
-    p.name = n;
 
-
+    Person p;
+    p.age = 45;
+    p.name = "Alex";
     print(p.name);
-
     return;
+}
+
+
+string prints(string s){
+    return s;
 }
