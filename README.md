@@ -18,6 +18,34 @@ or
 `java -cp target/compiler-0.0.3.jar Compiler <input-filename>`
 
 
+Update 1.0
+------------------------
+
+<br>
+
+### Compiler functionality<br><br>
+
+* Compiler now supports string variables and functions
+    * Strings can be declared and assigned as follows:<br><br>
+    
+    ```
+    string name;
+    name = "John Doe";
+    ```
+* Removed unnecessary **struct** keyword when declaring structs or struct arrays:<br><br>
+    ```
+    struct Person{
+        int age;
+        string name;
+    };
+
+    void main(){
+        Person p; //struct Person p;
+        return;
+    }
+    ```
+
+
 
 Assignment 07 Info
 ------------------------
