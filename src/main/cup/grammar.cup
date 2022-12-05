@@ -66,7 +66,7 @@ parser code
 terminal java.lang.String IDENTIFIER;       // name
 terminal DOT, COMMA;
 terminal PRINT;
-terminal BOOL, FLOAT, INT, CHAR;
+terminal BOOL, FLOAT, INT, CHAR, STRINGVAR;
 terminal IF, ELSE;
 terminal VOID;
 terminal RETURN, BREAK, CONTINTUE;
@@ -326,7 +326,7 @@ CompoundStmt ::= LCURLY:lc RCURLY:rc
                 :}
             ;
 
-//TODO REMNOVED VOID
+//TODO REMOVED VOID
 Type ::= CHAR
                 {:
                     RESULT = org.objectweb.asm.Type.CHAR_TYPE;
@@ -346,6 +346,11 @@ Type ::= CHAR
                 {:
                     RESULT = org.objectweb.asm.Type.INT_TYPE;
                 :}
+
+            | STRINGVAR
+                {:
+                    RESULT = org.objectweb.asm.Type.getType(String.class);
+                :}            
 
            /* | VOID
                 {:

@@ -67,6 +67,7 @@ BooleanLiteral = (true|false)
         "float"                        { return createSymbol(sym.FLOAT); }
         "int"                          { return createSymbol(sym.INT); }
         "char"                         { return createSymbol(sym.CHAR); }
+        "string"                       { return createSymbol(sym.STRINGVAR); }
         "while"                        { return createSymbol(sym.WHILE); }
         "if"                           { return createSymbol(sym.IF); }
         "else"                         { return createSymbol(sym.ELSE); }
