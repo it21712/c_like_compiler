@@ -54,13 +54,12 @@ public class Compiler {
                     // keep global instance of program
                     Registry.getInstance().setRoot(rootUnit);
 
-
                     // build symbol table
                     ASTVisitor symTableVisitor = new SymTableBuilderASTVisitor();
                     rootUnit.accept(symTableVisitor);
                     LOGGER.info("Constructed symbol tables");
 
-                    //build local variables index
+                    // build local variables index
                     LOGGER.info("Building local variables index");
                     rootUnit.accept(new LocalIndexBuilderASTVisitor());
 
@@ -74,12 +73,12 @@ public class Compiler {
                     rootUnit.accept(calculateTypesVisitor);
                     LOGGER.info("Semantic pass 2 done (calculated types)");
 
-
                     // print rootUnit
-                    /*LOGGER.info("Input:");
-                    ASTVisitor printVisitor = new PrintASTVisitor();
-                    rootUnit.accept(printVisitor);*/
-
+                    /*
+                     * LOGGER.info("Input:");
+                     * ASTVisitor printVisitor = new PrintASTVisitor();
+                     * rootUnit.accept(printVisitor);
+                     */
 
                     // convert to java bytecode
                     LOGGER.info("Bytecode:");
@@ -94,37 +93,40 @@ public class Compiler {
                     // get code
                     byte[] code = cw.toByteArray();
 
-
                     // update to file
-                    //LOGGER.info("Writing class to file Program.class");
+                    // LOGGER.info("Writing class to file Program.class");
                     FileOutputStream fos = new FileOutputStream("Program.class");
                     fos.write(code);
                     fos.close();
                     LOGGER.info("Compilation done");
 
                     // instantiate class
-                    //LOGGER.info("Loading class Program.class");
+                    // LOGGER.info("Loading class Program.class");
 
                     bytecodeVisitor.cl.register("Program", code);
                     Class<?> customLanguageClass = bytecodeVisitor.cl.loadClass("Program");
-                    /*ReloadingClassLoader rcl = new ReloadingClassLoader(ClassLoader.getSystemClassLoader());
-                    rcl.register("Program", code);
-                    Class<?> customLanguageClass = rcl.loadClass("Program");*/
+                    /*
+                     * ReloadingClassLoader rcl = new
+                     * ReloadingClassLoader(ClassLoader.getSystemClassLoader());
+                     * rcl.register("Program", code);
+                     * Class<?> customLanguageClass = rcl.loadClass("Program");
+                     */
 
                     // run main method
                     Method meth = customLanguageClass.getMethod("main");
-                    //String[] params = null;
+                    // String[] params = null;
                     LOGGER.info("Executing");
                     meth.invoke(null);
 
-
-                    /*LOGGER.info("3-address code:");
-                    IntermediateCodeASTVisitor threeAddressVisitor = new IntermediateCodeASTVisitor();
-                    rootUnit.accept(threeAddressVisitor);
-                    String intermediateCode = threeAddressVisitor.getProgram().emit();
-                    //System.out.println("--instructions--");
-                    System.out.println(intermediateCode);*/
-
+                    /*
+                     * LOGGER.info("3-address code:");
+                     * IntermediateCodeASTVisitor threeAddressVisitor = new
+                     * IntermediateCodeASTVisitor();
+                     * rootUnit.accept(threeAddressVisitor);
+                     * String intermediateCode = threeAddressVisitor.getProgram().emit();
+                     * //System.out.println("--instructions--");
+                     * System.out.println(intermediateCode);
+                     */
 
                 } catch (java.io.FileNotFoundException e) {
                     LOGGER.error("File not found : \"" + args[i] + "\"");

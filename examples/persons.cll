@@ -1,0 +1,16 @@
+
+struct Person{
+    int age;
+    String name;
+};
+
+
+void main(){
+    struct Person p;
+    p.age = 31;
+    p.name = "Alex";
+
+    print(p.name);
+
+    return;
+}
