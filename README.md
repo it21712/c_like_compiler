@@ -32,6 +32,15 @@ Update 1.0
     string name;
     name = "John Doe";
     ```
+    <br>
+
+    * String functions can be defined as all other types:<br><br>
+    ```
+    string hellostring(){
+        return "hello world!!";
+    }
+    ```
+    <br>
 * Removed unnecessary **struct** keyword when declaring structs or struct arrays:<br><br>
     ```
     struct Person{
@@ -44,7 +53,7 @@ Update 1.0
         return;
     }
     ```
-
+    <br><br>
 
 
 Assignment 07 Info
